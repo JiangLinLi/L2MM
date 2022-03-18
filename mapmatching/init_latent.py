@@ -47,8 +47,9 @@ def save_mu_c(args, m0, filename="pretrain_latent.pt"):
             z = z.unsqueeze(0)
             x_embedded.append(z)
 
-        x_embedded = np.concatenate(x_embedded, axis=0)
-        x_embedded = np.reshape(x_embedded,(-1,args.hidden_size))
+        x_embedded = torch.cat(x_embedded, dim=0)
+        x_embedded = torch.reshape(x_embedded,(-1,args.hidden_size))
+        x_embedded = x_embedded.cpu().numpy()
         kmeans = KMeans(n_clusters=args.cluster_size)
         kmeans.fit(x_embedded)
         init_mu_c = kmeans.cluster_centers_
