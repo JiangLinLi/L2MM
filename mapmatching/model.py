@@ -82,6 +82,8 @@ class LatentDistribution(nn.Module):
     def forward(self, h, kind="train"):
         h = h.squeeze()
         mu_z = self.cal_mu_z(h)
+        if kind == "test":
+            return mu_z
         log_sigma_sq_z = self.cal_log_sigma_z(h)
         eps_z = torch.rand(size=log_sigma_sq_z.shape)
         if kind == "pretrain" or kind=="train":
@@ -92,8 +94,6 @@ class LatentDistribution(nn.Module):
 
         if kind == "pretrain":
             return z
-        elif kind == "test":
-            return mu_z
         else:
             stack_mu_c = torch.stack([self.mu_c] * z.shape[0], dim=0)
             stack_log_sigma_sq_c = torch.stack([self.log_sigma_sq_c] * z.shape[0], dim=0)
