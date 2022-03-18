@@ -61,6 +61,7 @@ def evaluate(src, model, max_length):
     m0, m1 = model
     length = len(src)
     src = Variable(torch.LongTensor(src))
+    src = src.view(-1, 1)
     length = Variable(torch.LongTensor([[length]]))
     en_hn, H = m0.encoder(src, length)
     de_h0 = m0.encoder_hn2decoder_h0(en_hn)
