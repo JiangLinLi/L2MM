@@ -102,7 +102,7 @@ class LatentDistribution(nn.Module):
             stack_z = torch.stack([z] * self.cluter_size, dim=1)
             att_logits = - torch.sum(torch.pow(stack_z - stack_mu_c, 2) / torch.exp(stack_log_sigma_sq_c), dim=-1)
             att_logits = att_logits.squeeze()
-            att = F.softmax(att_logits)
+            att = F.softmax(att_logits)+ 1e-10
 
             batch_latent_loss, batch_cate_loss = self.batch_laten_loss(stack_log_sigma_sq_c, stack_mu_c, stack_log_sigma_sq_z, stack_mu_z, att,
                                                                        log_sigma_sq_z)
