@@ -106,7 +106,7 @@ def validate(valData, model, loss_f, args):
     m0, m1 = model
     m0.eval()
     m1.eval()
-    loss = 0
+    t_loss = 0
     with torch.no_grad():
         for x, y in valData:
             if args.cuda and torch.cuda.is_available():
@@ -115,12 +115,18 @@ def validate(valData, model, loss_f, args):
             input = torch.transpose(input, 0, 1)
             target, mask = torch.transpose(0, 1)
             mask = torch.transpose(mask, 0, 1)
-            output = m0(input, lengths, target)
+            output, batch_gaussian_loss, batch_cate_loss = m0(input, lengths, target)
             output = m1(output)
-            loss += loss_f(output, (target, mask)).item()/lengths.size(0)
+            loss = loss_f(output, (target, mask)).item()/lengths.size(0)
+            if args.cluater_size == 1:
+                    loss = loss + batch_gaussian_loss.item()
+                else:
+                    loss = loss + 1.0/args.hidden_size * batch_gaussian_loss.item() + 0.1 * batch_cate_loss.item()
+            
+            t_loss += loss
     m0.train()
     m1.train()
-    return loss
+    return t_loss
 
 
 def train(args):
@@ -188,9 +194,13 @@ def train(args):
                 input = torch.transpose(input, 0, 1)
                 target, mask = torch.transpose(0, 1)
                 mask = torch.transpose(mask, 0, 1)
-                output = m0(input, lengths, target)
+                output, batch_gaussian_loss, batch_cate_loss = m0(input, lengths, target)
                 output = m1(output)
                 loss = loss_f(output, (target, mask))
+                if args.cluater_size == 1:
+                    loss = loss + batch_gaussian_loss
+                else:
+                    loss = loss + 1.0/args.hidden_size * batch_gaussian_loss + 0.1 * batch_cate_loss
                 loss.backward()
                 clip_grad_norm(m0.parameters(), 5)
                 clip_grad_norm(m1.parameters(), 5)
