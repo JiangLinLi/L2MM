@@ -175,7 +175,7 @@ def train_bucket(args):
         lossF = lambda o, t: criterion(o, t)
 
     m0 = EncoderDecoder(args.input_cell_size,
-                        args.output_road_size,
+                        args.output_cell_size,
                         args.embedding_size,
                         args.hidden_size,
                         args.num_layers,
