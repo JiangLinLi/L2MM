@@ -183,7 +183,7 @@ def train_bucket(args):
                         args.dropout,
                         args.bidirectional)
 
-    m1 = nn.Sequential(nn.Linear(args.hidden_size, args.output_road_size),
+    m1 = nn.Sequential(nn.Linear(args.hidden_size, args.output_cell_size),
                        nn.LogSoftmax())
 
     if args.cuda and torch.cuda.is_available():
