@@ -39,14 +39,18 @@ class LatentDistribution(nn.Module):
         self.hidden_size = hidden_size
         if os.path.isfile(path):
             mu_c = torch.load(path)["mu_c"]
-            mu_c = torch.from_numpy(mu_c).to("cuda")
+            mu_c = torch.from_numpy(mu_c)
+            if torch.cuda.is_available():
+                mu_c = mu_c.to("cuda")
             self.mu_c = nn.Parameter(mu_c, requires_grad=True)
 
         else:
             mu_c = torch.rand(cluster_size, hidden_size)
             self.mu_c = nn.Parameter(mu_c, requires_grad=True)
 
-        log_sigma_sq_c = torch.zeros(cluster_size, hidden_size).to("cuda")
+        log_sigma_sq_c = torch.zeros(cluster_size, hidden_size)
+        if torch.cuda.is_available():
+            log_sigma_sq_c = log_sigma_sq_c.to("cuda")
         self.log_sigma_sq_c = nn.Parameter(log_sigma_sq_c, requires_grad=True)
 
         self.cal_mu_z = nn.Linear(hidden_size, hidden_size)
@@ -54,7 +58,7 @@ class LatentDistribution(nn.Module):
         nn.init.constant_(self.cal_mu_z.bias, 0.0)
 
         self.cal_log_sigma_z = nn.Linear(hidden_size, hidden_size)
-        nn.init.normal_(self.cal_cal_log_sigma_z.weight, std=0.02)
+        nn.init.normal_(self.cal_log_sigma_z.weight, std=0.02)
         nn.init.constant_(self.cal_log_sigma_z.bias, 0.0)
 
     def batch_laten_loss(self, stack_log_sigma_sq_c, stack_mu_c, stack_log_sigma_sq_z, stack_mu_z, att, log_sigma_sq_z):
@@ -79,10 +83,12 @@ class LatentDistribution(nn.Module):
         h = h.squeeze()
         mu_z = self.cal_mu_z(h)
         log_sigma_sq_z = self.cal_log_sigma_z(h)
-        eps_z = torch.rand(size=log_sigma_sq_z)
+        eps_z = torch.rand(size=log_sigma_sq_z.shape)
         if kind == "pretrain" or kind=="train":
-            eps_z = eps_z.to("cuda")
-        z = mu_z + torch.sqrt_(torch.exp(log_sigma_sq_z)) * eps_z
+            if torch.cuda.is_available():
+                eps_z = eps_z.to("cuda")
+
+        z = mu_z + torch.sqrt(torch.exp(log_sigma_sq_z)) * eps_z
 
         if kind == "pretrain":
             return z
