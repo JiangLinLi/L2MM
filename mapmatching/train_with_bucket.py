@@ -29,7 +29,7 @@ def init_parameters(model):
 def savecheckpoint(state, filename="trajectory2path.pt"):
     torch.save(state, filename)
 
-def validate(valData, model, lossF, args, inputdata,Adj_mat,Adj_mask,D):
+def validate(valData, model, lossF, args):
     m0, m1 = model
     m0.eval()
     m1.eval()
@@ -47,7 +47,7 @@ def validate(valData, model, lossF, args, inputdata,Adj_mat,Adj_mask,D):
             if args.cuda and torch.cuda.is_available():
                 input, lengths, target = input.to(device), lengths.to(device), target.to(device)
             output = m0(input, lengths, target)
-            loss = batchloss(output, target, m1, lossF, 1,inputdata)
+            loss = batchloss(output, target, m1, lossF, 2)
             total_loss += loss * output.size(1)
     m0.train()
     m1.train()
@@ -204,15 +204,15 @@ def train_bucket(args):
         m1_optimizer.load_state_dict(checkpoint["m1_optimizer"])
     else:
         best_prec_loss = float('inf')
-
+    start_iteration = 0
     num_iteration = args.epochs * sum(trainData.allocation) // args.batch
     print("Start at {} "
-          "and end at {}".format(args.start_iteration, num_iteration-1))
+          "and end at {}".format(start_iteration, num_iteration-1))
 
     early_stop = False
     early_count = 0
 
-    for iteration in range(args.start_iteration, num_iteration):
+    for iteration in range(start_iteration, num_iteration):
         if early_stop:
             break
         input, lengths, target = trainData.getbatch()
@@ -227,7 +227,7 @@ def train_bucket(args):
 
         output = m0(input, lengths, target)
 
-        loss = batchloss(output, target, m1, lossF, args.g_batch)
+        loss = batchloss(output, target, m1, lossF, 2)
         loss.backward()
         clip_grad_norm(m0.parameters(), 5)
         clip_grad_norm(m1.parameters(), 5)
@@ -238,7 +238,11 @@ def train_bucket(args):
             print("Iteration: {}\tLoss: {}".format(iteration, avg_loss))
 
         if iteration % args.save == 0 and iteration > 0:
-            if avg_loss < best_prec_loss:
+            val_loss = validate(valData, (m0, m1), lossF, args)
+            print("Iteration: {}, train_loss: {}, val_loss: {}".format(iteration, avg_loss, val_loss))
+            
+            if val_loss < best_prec_loss:
+                best_prec_loss = val_loss
                 early_count = 0
                 savecheckpoint({
                     "iteration": iteration,
