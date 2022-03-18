@@ -99,7 +99,7 @@ def evaluator(args, filename="trajectory2path.pt"):
     m0 = EncoderDecoder(
         args.cluster_size,
         args.input_cell_size,
-        args.output_cell_size,
+        args.output_road_size,
         args.embedding_size,
         args.hidden_size,
         args.num_layers,
@@ -109,7 +109,7 @@ def evaluator(args, filename="trajectory2path.pt"):
     )
 
     m1 = nn.Sequential(
-        nn.Linear(args.hidden_size, args.output_cell_size),
+        nn.Linear(args.hidden_size, args.output_road_size),
         nn.LogSoftmax()
     )
 
