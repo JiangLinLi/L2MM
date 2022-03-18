@@ -82,8 +82,8 @@ def evaluate(src, model, max_length):
 
 
 def evaluator(args, filename="trajectory2path.pt"):
-    test_src = ".\data\Freq90_cell_data_porto_test.txt"
-    test_trg = ".\data\Freq15_path_data_porto_test.txt"
+    test_src = open(".\data\Freq90_cell_data_porto_test.txt")
+    test_trg = open(".\data\Freq15_path_data_porto_test.txt")
     src = []
     for line in test_src:
         line = line.strip('\n').split(' ')
