@@ -85,8 +85,8 @@ def evaluate(src, model, max_length):
 
 
 def evaluator(args, filename="sparse2dense.pt"):
-    test_src = ".\data\Freq90_cell_data_porto_test.txt"
-    test_trg = ".\data\Freq15_cell_data_porto_test.txt"
+    test_src = ".\data\Freq60_cell_data_porto_test.txt"
+    test_trg = ".\data\Freq30_cell_data_porto_test.txt"
     src = []
     for line in test_src:
         line = line.strip('\n').split(' ')
@@ -149,15 +149,15 @@ def evaluator(args, filename="sparse2dense.pt"):
 
 
 def train_bucket(args):
-    trainsrc = '.\data\Freq90_cell_data_porto_train.txt'
-    traintrg = '.\data\Freq15_cell_data_porto_train.txt'
+    trainsrc = './data/Freq60_cell_data_Porto_(raw-point)_train_100000.txt'
+    traintrg = './data/Freq30_cell_data_Porto_(raw-point)_train_100000.txt'
 
     trainData = DataLoader(trainsrc, traintrg, args.batch, args.bucketsize)
     print("Read training data")
     trainData.load(args.max_num_line)
 
-    valsrc = '.\data\Freq90_cell_data_porto_val.txt'
-    valtrg = '.\data\Freq15_cell_data_porto_val.txt'
+    valsrc = './data/Freq60_cell_data_Porto_(raw-point)_val.txt'
+    valtrg = './data/Freq30_cell_data_Porto_(raw-point)_val.txt'
 
     if os.path.isfile(valsrc) and os.path.isfile(valtrg):
         valData = DataLoader(valsrc, valtrg, args.batch, args.bucketsize, True)
@@ -174,14 +174,16 @@ def train_bucket(args):
         criterion = nn.NLLLoss(ignore_index=0).to(device)
         lossF = lambda o, t: criterion(o, t)
 
-    m0 = EncoderDecoder(args.input_cell_size,
-                        args.output_cell_size,
-                        args.embedding_size,
-                        args.hidden_size,
-                        args.num_layers,
-                        args.de_layer,
-                        args.dropout,
-                        args.bidirectional)
+    m0 = EncoderDecoder(
+        args.input_cell_size,
+        args.output_cell_size,
+        args.embedding_size,
+        args.hidden_size,
+        args.num_layers,
+        args.de_layer,
+        args.dropout,
+        args.bidirectional
+    )
 
     m1 = nn.Sequential(nn.Linear(args.hidden_size, args.output_cell_size),
                        nn.LogSoftmax())
@@ -208,13 +210,14 @@ def train_bucket(args):
         best_prec_loss = float('inf')
 
     num_iteration = args.epochs * sum(trainData.allocation) // args.batch
+    start_iteration = 0
     print("Start at {} "
-          "and end at {}".format(args.start_iteration, num_iteration-1))
+          "and end at {}".format(start_iteration, num_iteration-1))
 
     early_stop = False
     early_count = 0
 
-    for iteration in range(args.start_iteration, num_iteration):
+    for iteration in range(start_iteration, num_iteration):
         if early_stop:
             break
         input, lengths, target = trainData.getbatch()
@@ -229,7 +232,7 @@ def train_bucket(args):
 
         output = m0(input, lengths, target)
 
-        loss = batchloss(output, target, m1, lossF, args.g_batch)
+        loss = batchloss(output, target, m1, lossF, 2)
         loss.backward()
         clip_grad_norm(m0.parameters(), 5)
         clip_grad_norm(m1.parameters(), 5)
@@ -241,12 +244,13 @@ def train_bucket(args):
 
         if iteration % args.save == 0 and iteration > 0:
             if avg_loss < best_prec_loss:
+                best_prec_loss = avg_loss
                 early_count = 0
                 savecheckpoint({
                     "iteration": iteration,
                     "val_loss": best_prec_loss,
-                    "encoder_m0": m0.encoder.state_dict(),
                     "m0": m0.state_dict(),
+                    "encoder_m0": m0.encoder.state_dict(),
                     "m1": m1.state_dict(),
                     "m0_optimizer": m0_optimizer.state_dict(),
                     "m1_optimizer": m1_optimizer.state_dict()
