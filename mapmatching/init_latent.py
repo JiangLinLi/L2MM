@@ -97,15 +97,15 @@ def pretrain_bucket(args):
     m0_optimizer = torch.optim.Adam(m0.parameters(), lr=args.learning_rate)
     m1_optimizer = torch.optim.Adam(m1.parameters(), lr=args.learning_rate)
     best_prec_loss = float('inf')
-
+    start_iteration = 0
     num_iteration = args.epochs * sum(trainData.allocation) // args.batch
     print("Start at {} "
-          "and end at {}".format(args.start_iteration, num_iteration-1))
+          "and end at {}".format(start_iteration, num_iteration-1))
 
     early_stop = False
     early_count = 0
 
-    for iteration in range(args.start_iteration, num_iteration):
+    for iteration in range(start_iteration, num_iteration):
         if early_stop:
             break
         input, lengths, target = trainData.getbatch()
@@ -119,7 +119,7 @@ def pretrain_bucket(args):
         m1_optimizer.zero_grad()
 
         output = m0(input, lengths, target, kind="pretrain")
-        loss = batchloss(output, target, m1, lossF, args.g_batch)
+        loss = batchloss(output, target, m1, lossF, 2)
         loss.backward()
         clip_grad_norm(m0.parameters(), 5)
         clip_grad_norm(m1.parameters(), 5)
@@ -130,7 +130,8 @@ def pretrain_bucket(args):
             print("Iteration: {}\tLoss: {}".format(iteration, avg_loss))
 
         if iteration % args.save == 0 and iteration > 0:
-            if loss.item() < best_prec_loss:
+            if avg_loss < best_prec_loss:
+                best_prec_loss = avg_loss
                 early_count = 0
                 savecheckpoint({
                     "iteration": iteration,
