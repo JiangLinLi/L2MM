@@ -38,7 +38,7 @@ class LatentDistribution(nn.Module):
         self.cluter_size = cluster_size
         self.hidden_size = hidden_size
         if os.path.isfile(path):
-            mu_c = torch.load(path)["mu_c"]
+            mu_c = torch.load(path)["init_mu_c"]
             mu_c = torch.from_numpy(mu_c)
             if torch.cuda.is_available():
                 mu_c = mu_c.to("cuda")
