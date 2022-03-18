@@ -46,8 +46,12 @@ def validate(valData, model, lossF, args):
             target = Variable(target)
             if args.cuda and torch.cuda.is_available():
                 input, lengths, target = input.to(device), lengths.to(device), target.to(device)
-            output = m0(input, lengths, target)
+            output, batch_gaussian_loss, batch_cate_loss = m0(input, lengths, target)
             loss = batchloss(output, target, m1, lossF, 2)
+            if args.cluater_size == 1:
+                loss = loss + batch_gaussian_loss
+            else:
+                loss = loss + 1.0/args.hidden_size * batch_gaussian_loss + 0.1 * batch_cate_loss
             total_loss += loss * output.size(1)
     m0.train()
     m1.train()
@@ -225,9 +229,12 @@ def train_bucket(args):
         m0_optimizer.zero_grad()
         m1_optimizer.zero_grad()
 
-        output = m0(input, lengths, target)
-
+        output, batch_gaussian_loss, batch_cate_loss = m0(input, lengths, target)
         loss = batchloss(output, target, m1, lossF, 2)
+        if args.cluater_size == 1:
+            loss = loss + batch_gaussian_loss
+        else:
+            loss = loss + 1.0/args.hidden_size * batch_gaussian_loss + 0.1 * batch_cate_loss
         loss.backward()
         clip_grad_norm(m0.parameters(), 5)
         clip_grad_norm(m1.parameters(), 5)
