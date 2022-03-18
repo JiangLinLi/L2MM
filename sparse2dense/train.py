@@ -177,7 +177,8 @@ def train(args):
             early_count = 0
             savecheckpoint({
                 "epoch": epoch,
-                "best_prec_loss": best_prec_loss,
+                "val_loss": best_prec_loss,
+                "encoder_m0": m0.encoder.state_dict(),
                 "m0": m0.state_dict(),
                 "m1": m1.state_dict(),
                 "m0_optimizer": m0_optimizer.state_dict(),
