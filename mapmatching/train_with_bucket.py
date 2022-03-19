@@ -21,6 +21,14 @@ def batchloss(output, target, generator, lossF, g_batch):
         loss += lossF(o, t)
     return loss.div(batch/g_batch)
 
+def maskloss(output, target, generator, lossF, g_batch):
+    output = ouput.view(-1, output.size(2))
+    ouput = generator(output)
+    target = target[1:]
+    target = target.view(-1)
+    loss = lossF(output, target)
+    return loss
+
 
 def init_parameters(model):
     for p in model.parameters():
@@ -47,7 +55,8 @@ def validate(valData, model, lossF, args):
             if args.cuda and torch.cuda.is_available():
                 input, lengths, target = input.to(device), lengths.to(device), target.to(device)
             output, batch_gaussian_loss, batch_cate_loss = m0(input, lengths, target)
-            loss = batchloss(output, target, m1, lossF, 2)
+            # loss = batchloss(output, target, m1, lossF, 2)
+            loss = maskloss(output, target, m1, lossF, 2)
             if args.cluater_size == 1:
                 loss = loss + batch_gaussian_loss
             else:
@@ -231,7 +240,9 @@ def train_bucket(args):
         m1_optimizer.zero_grad()
 
         output, batch_gaussian_loss, batch_cate_loss = m0(input, lengths, target)
-        loss = batchloss(output, target, m1, lossF, 2)
+        # loss = batchloss(output, target, m1, lossF, 2)
+        loss = maskloss(output, target, m1, lossF, 2)
+        
         if args.cluater_size == 1:
             loss = loss + batch_gaussian_loss
         else:
