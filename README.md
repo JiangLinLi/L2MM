@@ -1,4 +1,4 @@
-# Desccription of L2MM
+# Description of L2MM
 source_code for L2MM (implement of L2MM model).
 
 
